@@ -319,8 +319,8 @@ void Airspeed::Publish(uint8_t instance, bool multi)
 			break;
 		}
 
-		// assume that EAS = IAS as we don't have an EAS-scale here
-		out.true_airspeed_m_s = calc_TAS_from_EAS(out.indicated_airspeed_m_s, _baro_pressure_pa, temperature);
+		// assume that CAS = IAS as we don't have an CAS-scale here
+		out.true_airspeed_m_s = calc_TAS_from_CAS(out.indicated_airspeed_m_s, _baro_pressure_pa, temperature);
 
 		if (PX4_ISFINITE(out.indicated_airspeed_m_s) && PX4_ISFINITE(out.true_airspeed_m_s)) {
 			out.timestamp = hrt_absolute_time();
