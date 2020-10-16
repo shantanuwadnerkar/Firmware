@@ -193,7 +193,7 @@ protected:
 		}
 	}
 
-	bool isFloatEqual(float a, float b) const { return fabsf(a - b) > FLT_EPSILON; }
+	bool isFloatEqual(float a, float b) const { return fabsf(a - b) < FLT_EPSILON; }
 
 private:
 	void sumDischarged(const hrt_abstime &timestamp, float current_a);
