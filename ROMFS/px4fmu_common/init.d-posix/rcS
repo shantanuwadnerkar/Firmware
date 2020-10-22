@@ -19,6 +19,8 @@ then
 	exit 0
 fi
 
+ENABLE_ACCEL_INTEGRATION=1
+
 # initialize script variables
 set AUX_MODE                    none
 set IO_PRESENT                  no
@@ -212,6 +214,12 @@ sensors start
 commander start
 navigator start
 
+if [ $ENABLE_ACCEL_INTEGRATION ];
+then
+	accel_integration start
+fi
+
+# accel_integration start
 
 if ! param compare -s MNT_MODE_IN -1
 then

@@ -21,6 +21,7 @@ px4_add_board(
 		#uavcan
 
 	MODULES
+		accel_integration
 		attitude_estimator_q
 		camera_feedback
 		commander
@@ -80,6 +81,7 @@ px4_add_board(
 		#hwtest # Hardware test
 		px4_mavlink_debug # Tutorial code from http://dev.px4.io/en/debug/debug_values.html
 		px4_simple_app # Tutorial code from http://dev.px4.io/en/apps/hello_sky.html
+		px4_my_app
 		rover_steering_control # Rover example app
 	)
 
