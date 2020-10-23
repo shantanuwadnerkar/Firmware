@@ -19,6 +19,8 @@ then
 	exit 0
 fi
 
+ENABLE_ACCEL_INTEGRATION=1
+
 # initialize script variables
 set AUX_MODE                    none
 set IO_PRESENT                  no
@@ -253,3 +255,8 @@ sh etc/init.d/rc.logging
 
 mavlink boot_complete
 replay trystart
+
+if [ $ENABLE_ACCEL_INTEGRATION -gt 0 ]; then
+	accel_integration start
+	# logger start -r 100 -p integrated_accel
+fi
