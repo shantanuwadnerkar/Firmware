@@ -49,16 +49,15 @@
 #include <perf/perf_counter.h>
 
 #include <uORB/uORB.h>
+#include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
-#include <uORB/topics/sensor_accel.h>
+#include <uORB/topics/integrated_accel.h>
 #include <uORB/topics/sensor_combined.h>
+#include <uORB/topics/vehicle_status.h>
 
 
 extern "C" __EXPORT int accel_integration_main(int argc, char* argv[]);
-
-// uORB::Subscription a{ORB_ID(sensor_combined)};
-// uORB::SubscriptionCallbackWorkItem a{this, ORB_ID(sensor_combined)};
 
 class AccelIntegration : public ModuleBase<AccelIntegration>, public ModuleParams, public px4::WorkItem
 {
@@ -67,16 +66,22 @@ public:
 
     ~AccelIntegration() override;
 
-	/** @see ModuleBase */
+	/** @see ModuleBase 
+	 * Starter function. This function is called after AccelIntegration::main() is done.
+	*/
 	static int task_spawn(int argc, char *argv[]);
 
 	/** @see ModuleBase */
 	static int custom_command(int argc, char *argv[]);
 
-	/** @see ModuleBase */
+	/** @see ModuleBase 
+	 * Print help.
+	*/
 	static int print_usage(const char *reason = nullptr);
 
-    /** @see ModuleBase::print_status() */
+    /** @see ModuleBase::print_status() 
+	 * Print the current status of the module.
+	*/
 	int print_status() override;
 
 	/** @see ModuleBase::run() */
@@ -85,14 +90,22 @@ public:
     bool init();
 
 private:
-    /**
-	 * Check for parameter changes and update them if needed.
-	 * @param parameter_update_sub uorb subscription to parameter_update
-	 * @param force for a parameter update
-	 */
-	// void parameters_update(bool force = false);
+	/**
+	 * Variable to check if the UAV is armed or not.
+	*/
+	bool _armed{false};
+
+	/**
+	 * Variables to store the summation of velocity in x, y, z axes.
+	*/
+	double _vel_x{0.0};
+	double _vel_y{0.0};
+	double _vel_z{0.0};
 
     // Subscriptions
-	uORB::SubscriptionCallbackWorkItem	_sensor_combined_sub{this, ORB_ID(sensor_combined)};
-
+	uORB::SubscriptionCallbackWorkItem _status_sub{this, ORB_ID(vehicle_status)}; // Status of UAV to check if it's armed or disarmed
+	uORB::SubscriptionCallbackWorkItem	_sensor_combined_sub{this, ORB_ID(sensor_combined)}; // uORB topic referenced in EKF2 to subscribe to accelerometer readings
+	
+	// Publication
+	uORB::Publication<integrated_accel_s> _integrated_accel_pub{ORB_ID(integrated_accel)}; // Publish the integrated delta acceleration or velocity for X, Y, Z axes
 };

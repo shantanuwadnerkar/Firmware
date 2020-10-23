@@ -214,12 +214,6 @@ sensors start
 commander start
 navigator start
 
-if [ $ENABLE_ACCEL_INTEGRATION ];
-then
-	accel_integration start
-fi
-
-# accel_integration start
 
 if ! param compare -s MNT_MODE_IN -1
 then
@@ -261,3 +255,8 @@ sh etc/init.d/rc.logging
 
 mavlink boot_complete
 replay trystart
+
+if [ $ENABLE_ACCEL_INTEGRATION -gt 0 ]; then
+	accel_integration start
+	# logger start -r 100 -p integrated_accel
+fi

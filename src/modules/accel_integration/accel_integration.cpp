@@ -33,7 +33,7 @@
 
 /**
  * @file accel_integration.cpp
- * Minimal application example for PX4 autopilot
+ * Minimal module example for integrating acceleration readings over time.
  *
  * @author Shantanu Wadnerkar <shantanu5996@gmail.com>
  */
@@ -44,15 +44,15 @@
 
 AccelIntegration::AccelIntegration()
     : ModuleParams(nullptr),
-    WorkItem(MODULE_NAME, px4::wq_configurations::att_pos_ctrl)
+    WorkItem(MODULE_NAME, px4::wq_configurations::hp_default)
 {
-    PX4_INFO("Inside AccelIntegration constructor");
+    PX4_INFO("Constructing AccelIntegration object..");
 }
 
 
 AccelIntegration::~AccelIntegration()
 {
-    PX4_INFO("Inside AccelIntegration destructor");
+    PX4_INFO("Destructing AccelIntegration object...");
 }
 
 
@@ -88,57 +88,79 @@ int AccelIntegration::task_spawn(int argc, char *argv[])
 
 int AccelIntegration::custom_command(int argc, char *argv[])
 {
-    PX4_INFO("Inside custom_command");
-    return 0;
+    return print_usage("Unknown command");
 }
 
 
 int AccelIntegration::print_usage(const char *reason)
 {
     PX4_INFO("Inside print_usage");
+
+    if (reason)
+    {
+        PX4_WARN("%s\n", reason);
+    }
     return 0;
 }
 
 
 int AccelIntegration::print_status()
 {
-    PX4_INFO("Inside print_status");
+    PX4_INFO("Running...");
     return 0;
 }
 
 
 void AccelIntegration::Run()
 {
-    PX4_INFO("Inside run");
+    vehicle_status_s status; // Status of UAV, armed or disarmed
+    sensor_combined_s sensor_combined_data; // Accelerometer data
+    integrated_accel_s velocity_data; // Velocity data to be pbulished
 
+    // Unregister callback if the module is stopped or PX4 shutdown
     if (should_exit()) {
 		_sensor_combined_sub.unregisterCallback();
 		exit_and_cleanup();
 		return;
 	}
 
-    
-    sensor_combined_s sensors;
-
-    if (_sensor_combined_sub.update(&sensors)) {
-        std::cout << "sensor msg update" << "\t";
+    // If status changes, update it here.
+    if (_status_sub.update(&status))
+    {
+        if (status.arming_state == vehicle_status_s::ARMING_STATE_ARMED)
+            {
+            _armed = true;
+            }
+        else
+        {
+            _armed = false; // if this statement if kept above the status update condition, rate of sensor data msg update becomes slow
+        }
     }
 
-    std::cout << &sensors << "\n";
+    // Integrate accelleration only if it is armed and if there is change in reading. Status and Sensor topics publish at unequal rates. That's why they are divided in separate conditions
+    if (_armed && _sensor_combined_sub.update(&sensor_combined_data)) {
+        double delta_vel_dt{sensor_combined_data.accelerometer_integral_dt * 1.e-6f};
+        _vel_x += (double)sensor_combined_data.accelerometer_m_s2[0] * delta_vel_dt;
+        _vel_y += (double)sensor_combined_data.accelerometer_m_s2[1] * delta_vel_dt;
+        _vel_z += (double)sensor_combined_data.accelerometer_m_s2[2] * delta_vel_dt;
 
-    while (!should_exit())
-    {
-        // PX4_INFO("Inside run - inside loop");
+        velocity_data.timestamp = (double)sensor_combined_data.timestamp;
+        velocity_data.integral_dt = (double)sensor_combined_data.accelerometer_integral_dt;
+        velocity_data.vel_x = _vel_x;
+        velocity_data.vel_y = _vel_y;
+        velocity_data.vel_z = _vel_z;
+
+        _integrated_accel_pub.publish(velocity_data);
     }
 }
 
 
 bool AccelIntegration::init()
 {
-    PX4_INFO("Inside init");
+    PX4_INFO("Initialisating object...");
 
 	if (!_sensor_combined_sub.registerCallback()) {
-		PX4_ERR("sensor combined callback registration failed!");
+		PX4_ERR("Sensor_combined callback registration failed!");
 		return false;
 	}
 
@@ -148,11 +170,7 @@ bool AccelIntegration::init()
 
 int accel_integration_main(int argc, char *argv[])
 {
-    PX4_INFO("Running ACCEL_INTEGRATION App...");
-
-    // uORB::Subscription sc(ORB_ID(sensor_combined), 1, 0);
-    // int abc = orb_subscribe(ORB_ID(sensor_combined));
-    // std::cout << abc << "\n";
+    PX4_INFO("Running ACCEL_INTEGRATION module...");
     
     return AccelIntegration::main(argc, argv);
 }
